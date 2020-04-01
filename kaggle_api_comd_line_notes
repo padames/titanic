@@ -1,0 +1,107 @@
+Title: Installing Kaggle API for command line interaction using python
+Author: Pablo Adames
+File creation: April 1, 2013
+Last update: April 1, 2013:
+
+
+0. Follwing instructions from:
+
+    https://www.kaggle.com/docs/api
+
+1. Installation of the python package (source: https://anaconda.org/conda-forge/kaggle):
+
+    $ conda install -c conda-forge kaggle
+
+    The following packages will be downloaded:
+    
+        package                    |            build
+        ---------------------------|-----------------
+        certifi-2019.11.28         |   py37hc8dfbb8_1         149 KB  conda-forge
+        kaggle-1.5.6               |           py37_1         101 KB  conda-forge
+        openssl-1.1.1f             |       h516909a_0         2.1 MB  conda-forge
+        python-slugify-4.0.0       |             py_0          10 KB  conda-forge
+        text-unidecode-1.2         |             py_0          66 KB  conda-forge
+        tqdm-4.44.1                |     pyh9f0ad1d_0          48 KB  conda-forge
+        unidecode-1.1.1            |             py_0         157 KB  conda-forge
+        urllib3-1.24.3             |           py37_0         151 KB  conda-forge
+        ------------------------------------------------------------
+                                               Total:         2.8 MB
+    
+    The following NEW packages will be INSTALLED:
+    
+      kaggle              conda-forge/linux-64::kaggle-1.5.6-py37_1
+      python-slugify      conda-forge/noarch::python-slugify-4.0.0-py_0
+      python_abi          conda-forge/linux-64::python_abi-3.7-1_cp37m
+      text-unidecode      conda-forge/noarch::text-unidecode-1.2-py_0
+      tqdm                conda-forge/noarch::tqdm-4.44.1-pyh9f0ad1d_0
+      unidecode           conda-forge/noarch::unidecode-1.1.1-py_0
+    
+    The following packages will be UPDATED:
+    
+      openssl             pkgs/main::openssl-1.1.1e-h7b6447c_0 --> conda-forge::openssl-1.1.1f-h516909a_0
+    
+    The following packages will be SUPERSEDED by a higher-priority channel:
+    
+      ca-certificates     pkgs/main::ca-certificates-2020.1.1-0 --> conda-forge::ca-certificates-2019.11.28-hecc5488_0
+      certifi             pkgs/main::certifi-2019.11.28-py37_1 --> conda-forge::certifi-2019.11.28-py37hc8dfbb8_1
+      urllib3             pkgs/main::urllib3-1.25.8-py37_0 --> conda-forge::urllib3-1.24.3-py37_0
+    
+    
+    Proceed ([y]/n)? y
+    
+    
+    After installation I got a .kaggle.json file not found error just trying to run a 
+    kaggle --version from comamnd line. So I checked for updates to conda first (see 2.0 below)
+    
+2. After installation I realized conda was not up to date, so I ran:
+
+    $ conda update -n base -c defaults conda
+    
+    followed by:
+    
+    $ conda update -c conda-forge kaggle
+    
+    This triggered a lot of updates.
+    
+    The updates were apparently interrupted with this message:
+    
+    CondaSignalInterrupt: Signal interrupt SIGINT
+    
+    at this point in the installation:
+    
+    pycodestyle-2.5.0    | 36 KB     | ######################################################################################### | 100% 
+    google-auth-1.12.0   | 52 KB     | ######################################################################################### | 100% 
+    zstd-1.4.4           | 982 KB    | ######################################################################################### | 100% 
+
+
+    I am still getting the file not found error:
+    
+    (py3) pablo@pablo-XPS-13-7390:titanic$ kaggle --version
+    Traceback (most recent call last):
+        File "/home/pablo/anaconda3/envs/py3/bin/kaggle", line 7, in <module>
+            from kaggle.cli import main
+        File "/home/pablo/anaconda3/envs/py3/lib/python3.7/site-packages/kaggle/__init__.py", line 23, in <module>
+            api.authenticate()
+        File "/home/pablo/anaconda3/envs/py3/lib/python3.7/site-packages/kaggle/api/kaggle_api_extended.py", line 149, in authenticate
+            self.config_file, self.config_dir))
+    OSError: Could not find kaggle.json. Make sure it's located in /home/pablo/.kaggle. Or use the environment method.
+    
+    That folder is empty.
+    
+    Re-ran the kaggle update command. Finished without errors. Tried kaggle --version with same result.
+    
+3. To fix above error continue with the Kaggle API installation process. 
+   Next, download the API from my account https://www.kaggle.com/padames/account by editing my profile on the 
+   browser page and clicking the option generate new API token.
+   
+   Saved the kaggle.json file to ~/.kaggle/ and then:
+   
+   $ $ kaggle --version
+    Warning: Your Kaggle API key is readable by other users on this system!
+        To fix this, you can run 'chmod 600 /home/pablo/.kaggle/kaggle.json'
+    Kaggle API 1.5.6
+    
+    Which I did.
+
+
+   
