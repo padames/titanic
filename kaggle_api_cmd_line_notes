@@ -103,5 +103,26 @@ Last update: April 1, 2013:
     
     Which I did.
 
-
+    From the Kaggle API docs (https://www.kaggle.com/docs/api):
+    
+    "If you are using the Kaggle CLI tool, the tool will look for this token at ~/.kaggle/kaggle.json 
+    on Linux, OSX, and other UNIX-based operating systems, and at C:\Users<Windows-username>.kaggle\kaggle.json 
+    on Windows. If the token is not there, an error will be raised. Hence, once you’ve downloaded the token, 
+    you should move it from your Downloads folder to this folder."
    
+4. Download data related to a competition:
+
+    $ kaggle competitions download -c titanic
+    Downloading titanic.zip to /home/pablo/Documents/MasterOfSoftwareEng/Courses/Winter 2020/ENSF 611/Project/titanic
+    0%|                                                   | 0.00/34.1k [00:00<?, ?B/s]
+    100%|█████████████████████████████████
+  
+
+5. Reading the contents of the file downloaded wihtout decompresing it:
+    $> unzip("titanic.zip", list = TRUE)
+                       Name     Length                Date
+    1 gender_submission.csv 4294967295 2019-12-11 02:17:00
+    2              test.csv 4294967295 2019-12-11 02:17:00
+    3             train.csv 4294967295 2019-12-11 02:17:00
+
+
