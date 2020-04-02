@@ -5,10 +5,10 @@
 ## and the zip file was moved to the folder "data/" aunder the project root folder
 
 
-source('create_df_from_zip_file.R')
+source('extract_from_zip_file_and_backup_as_rds.R')
 source("read_train_and_test_from_disk.R")
 
-library(rattle)
+# library(rattle)
 
 
-rattle()
+# rattle()
