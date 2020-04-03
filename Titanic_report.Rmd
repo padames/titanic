@@ -215,12 +215,37 @@ The input categorical variables are `Sex` for gender Female (0) or Male (1), `Pc
 The dependent or predicted variable is `Survived` that takes 196 (59.6%) negative outcomes  represented as 0 and 133 (40.4%) positive results represented as 1. 
 
 
-## Distributions
+## Preprocessing
 
+Only the numerical variables identified in the previous section were normalized. The `preObj` should be used to train and predict with the test data set for consistency. 
+
+```{r "standarization"}
+library(caret)
+preObj <- preProcess(titanic_train_clean[,c("Age","SibSp","Parch","Fare")], method = c("center","scale", "BoxCox"))
+# sibsbstd <- predict(preObj, titanic_train_clean[,c(6,7,8,9)])$SibSp
+titanic_train_transformed <- predict(preObj, titanic_train_clean[,c("Age","SibSp","Parch","Fare")])
+titanic_train_scaled <- cbind(titanic_train_clean[,c("PassengerId","Pclass","Sex","Embarked", "Survived")], titanic_train_transformed)
+titanic_train_scaled$Survived <- as.factor(titanic_train_scaled$Survived)
+titanic_train_scaled$Pclass <- as.factor(titanic_train_scaled$Pclass)
+```
+
+The variables `Name` and `Cabin` were dropped from this data frame because they hold very little meaning for prediction.
 
 
 # Model building
 
+
+## Logistic regression
+
+```{r "logistic regression"}
+default_glm_mod = train(form = Survived ~ .,
+                        data = titanic_train_scaled,
+                        trControl = trainControl(method = "cv", number = 5),
+                        method = "glm",
+                        family = "binomial")
+
+default_glm_mod
+```
 
 ## Decision tree
 

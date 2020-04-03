@@ -498,11 +498,57 @@ Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1</code></pre>
 <p>The dependent or predicted variable is <code>Survived</code> that takes 196 (59.6%) negative outcomes represented as 0 and 133 (40.4%) positive results represented as 1.</p>
 </div>
 </div>
-<div id="distributions" class="section level2">
-<h2>Distributions</h2>
+<div id="preprocessing" class="section level2">
+<h2>Preprocessing</h2>
+<p>Only the numerical variables identified in the previous section were normalized. The <code>preObj</code> should be used to train and predict with the test data set for consistency.</p>
+<pre class="r"><code>library(caret)</code></pre>
+<pre><code>## Loading required package: lattice</code></pre>
+<pre class="r"><code>preObj &lt;- preProcess(titanic_train_clean[,c(&quot;Age&quot;,&quot;SibSp&quot;,&quot;Parch&quot;,&quot;Fare&quot;)], method = c(&quot;center&quot;,&quot;scale&quot;, &quot;BoxCox&quot;))
+# sibsbstd &lt;- predict(preObj, titanic_train_clean[,c(6,7,8,9)])$SibSp
+titanic_train_transformed &lt;- predict(preObj, titanic_train_clean[,c(&quot;Age&quot;,&quot;SibSp&quot;,&quot;Parch&quot;,&quot;Fare&quot;)])
+titanic_train_scaled &lt;- cbind(titanic_train_clean[,c(&quot;PassengerId&quot;,&quot;Pclass&quot;,&quot;Sex&quot;,&quot;Embarked&quot;, &quot;Survived&quot;)], titanic_train_transformed)
+titanic_train_scaled$Survived &lt;- as.factor(titanic_train_scaled$Survived)
+titanic_train_scaled$Pclass &lt;- as.factor(titanic_train_scaled$Pclass)</code></pre>
+<p>The variables <code>Name</code> and <code>Cabin</code> were dropped from this data frame because they hold very little meaning for prediction.</p>
 </div>
 <div id="model-building" class="section level1">
 <h1>Model building</h1>
+<div id="logistic-regression" class="section level2">
+<h2>Logistic regression</h2>
+<pre class="r"><code>default_glm_mod = train(form = Survived ~ .,
+                        data = titanic_train_scaled,
+                        trControl = trainControl(method = &quot;cv&quot;, number = 5),
+                        method = &quot;glm&quot;,
+                        family = &quot;binomial&quot;)</code></pre>
+<pre><code>## Warning in predict.lm(object, newdata, se.fit, scale = 1, type = if (type == :
+## prediction from a rank-deficient fit may be misleading
+
+## Warning in predict.lm(object, newdata, se.fit, scale = 1, type = if (type == :
+## prediction from a rank-deficient fit may be misleading
+
+## Warning in predict.lm(object, newdata, se.fit, scale = 1, type = if (type == :
+## prediction from a rank-deficient fit may be misleading
+
+## Warning in predict.lm(object, newdata, se.fit, scale = 1, type = if (type == :
+## prediction from a rank-deficient fit may be misleading
+
+## Warning in predict.lm(object, newdata, se.fit, scale = 1, type = if (type == :
+## prediction from a rank-deficient fit may be misleading</code></pre>
+<pre class="r"><code>default_glm_mod</code></pre>
+<pre><code>## Generalized Linear Model 
+## 
+## 471 samples
+##   8 predictor
+##   2 classes: '0', '1' 
+## 
+## No pre-processing
+## Resampling: Cross-Validated (5 fold) 
+## Summary of sample sizes: 376, 377, 377, 377, 377 
+## Resampling results:
+## 
+##   Accuracy   Kappa   
+##   0.7813886  0.544162</code></pre>
+</div>
 <div id="decision-tree" class="section level2">
 <h2>Decision tree</h2>
 </div>
