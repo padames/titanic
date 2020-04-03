@@ -376,7 +376,7 @@ summary {
 <pre><code>$ kaggle competitions download -c titanic
     Downloading titanic.zip to /home/pablo/Documents/Winter 2020/ENSF 611/Project/titanic
     0%|                                                   | 0.00/34.1k [00:00&lt;?, ?B/s]
-    100%|█████████████████████████████████</code></pre>
+    100%|</code></pre>
 <p>A new folder called <code>data/</code> was created under the project root directory and the file was moved there. The following R command inspects what’s in the file without actually decompressing it.</p>
 <pre class="r"><code>unzip(&quot;data/titanic.zip&quot;, list = TRUE)</code></pre>
 <pre><code>##                    Name     Length                Date
@@ -515,7 +515,8 @@ titanic_train_scaled$Pclass &lt;- as.factor(titanic_train_scaled$Pclass)</code><
 <h1>Model building</h1>
 <div id="logistic-regression" class="section level2">
 <h2>Logistic regression</h2>
-<pre class="r"><code>default_glm_mod = train(form = Survived ~ .,
+<pre class="r"><code>set.seed(112233)
+default_glm_mod = train(form = Survived ~ .,
                         data = titanic_train_scaled,
                         trControl = trainControl(method = &quot;cv&quot;, number = 5),
                         method = &quot;glm&quot;,
@@ -543,14 +544,79 @@ titanic_train_scaled$Pclass &lt;- as.factor(titanic_train_scaled$Pclass)</code><
 ## 
 ## No pre-processing
 ## Resampling: Cross-Validated (5 fold) 
-## Summary of sample sizes: 376, 377, 377, 377, 377 
+## Summary of sample sizes: 377, 377, 376, 377, 377 
 ## Resampling results:
 ## 
-##   Accuracy   Kappa   
-##   0.7813886  0.544162</code></pre>
+##   Accuracy   Kappa    
+##   0.7857335  0.5511223</code></pre>
 </div>
 <div id="decision-tree" class="section level2">
 <h2>Decision tree</h2>
+</div>
+<div id="random-forests" class="section level2">
+<h2>Random forests</h2>
+<pre class="r"><code>set.seed(112233)
+default_rf_mod &lt;- train(form = Survived ~ ., 
+                        data = titanic_train_scaled,
+                        method = &quot;rf&quot;,
+                        prox = TRUE)
+default_rf_mod</code></pre>
+<pre><code>## Random Forest 
+## 
+## 471 samples
+##   8 predictor
+##   2 classes: '0', '1' 
+## 
+## No pre-processing
+## Resampling: Bootstrapped (25 reps) 
+## Summary of sample sizes: 471, 471, 471, 471, 471, 471, ... 
+## Resampling results across tuning parameters:
+## 
+##   mtry  Accuracy   Kappa    
+##    2    0.7903065  0.5540096
+##    7    0.7871034  0.5515029
+##   12    0.7769229  0.5300991
+## 
+## Accuracy was used to select the optimal model using the largest value.
+## The final value used for the model was mtry = 2.</code></pre>
+<p>Random forest with cross validation</p>
+<pre class="r"><code>set.seed(112233)
+library(parallel) 
+# Calculate the number of cores
+no_cores &lt;- detectCores() - 1
+
+library(doParallel)</code></pre>
+<pre><code>## Loading required package: foreach</code></pre>
+<pre><code>## Loading required package: iterators</code></pre>
+<pre class="r"><code>cl &lt;- makePSOCKcluster(no_cores)
+registerDoParallel(cl) 
+
+default_rfcv_mod &lt;- train(form = Survived ~ ., 
+                        data = titanic_train_scaled,
+                        method = &quot;rf&quot;,
+                        trControl= trainControl(method = &quot;LOOCV&quot;, p = 0.1, allowParallel = TRUE),
+                        prox = TRUE)
+default_rfcv_mod</code></pre>
+<pre><code>## Random Forest 
+## 
+## 471 samples
+##   8 predictor
+##   2 classes: '0', '1' 
+## 
+## No pre-processing
+## Resampling: Leave-One-Out Cross-Validation 
+## Summary of sample sizes: 470, 470, 470, 470, 470, 470, ... 
+## Resampling results across tuning parameters:
+## 
+##   mtry  Accuracy   Kappa    
+##    2    0.7855626  0.5404168
+##    7    0.8025478  0.5826974
+##   12    0.8067941  0.5904074
+## 
+## Accuracy was used to select the optimal model using the largest value.
+## The final value used for the model was mtry = 12.</code></pre>
+<pre class="r"><code>stopCluster(cl)</code></pre>
+<p>The random forest grwon with leave one out cross validation for the splitting on variables while growing trees, produces an accuracy of 0.7855626, 0.8025478, 0.8067941 on the training set.</p>
 </div>
 </div>
 <div id="references" class="section level1 unnumbered">

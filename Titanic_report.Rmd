@@ -22,7 +22,7 @@ After installing the Kaggle API (Kaggle API 1.5.6), from the comamnd line, follo
 $ kaggle competitions download -c titanic
     Downloading titanic.zip to /home/pablo/Documents/Winter 2020/ENSF 611/Project/titanic
     0%|                                                   | 0.00/34.1k [00:00<?, ?B/s]
-    100%|█████████████████████████████████
+    100%|
 ```
 
 A new folder called `data/` was created under the project root directory and the file was moved there. The following R command inspects what's in the file without actually decompressing it.
@@ -238,6 +238,7 @@ The variables `Name` and `Cabin` were dropped from this data frame because they 
 ## Logistic regression
 
 ```{r "logistic regression"}
+set.seed(112233)
 default_glm_mod = train(form = Survived ~ .,
                         data = titanic_train_scaled,
                         trControl = trainControl(method = "cv", number = 5),
@@ -247,11 +248,55 @@ default_glm_mod = train(form = Survived ~ .,
 default_glm_mod
 ```
 
+
+
 ## Decision tree
 
 
+## Random forests
+
+```{r default random forest}
+set.seed(112233)
+library(parallel) 
+# Calculate the number of cores
+no_cores <- detectCores() - 1
+
+library(doParallel)
+cl <- makePSOCKcluster(no_cores)
+registerDoParallel(cl) 
+
+default_rf_mod <- train(form = Survived ~ ., 
+                        data = titanic_train_scaled,
+                        method = "rf",
+                        prox = TRUE)
+stopCluster(cl)
+default_rf_mod
+                
+```                        
 
 
+Random forest with cross validation
+
+```{r default random forest loocv}
+set.seed(112233)
+library(parallel) 
+# Calculate the number of cores
+no_cores <- detectCores() - 1
+
+library(doParallel)
+cl <- makePSOCKcluster(no_cores)
+registerDoParallel(cl) 
+
+default_rfcv_mod <- train(form = Survived ~ ., 
+                        data = titanic_train_scaled,
+                        method = "rf",
+                        trControl= trainControl(method = "LOOCV", p = 0.1, allowParallel = TRUE),
+                        prox = TRUE)
+default_rfcv_mod
+stopCluster(cl)
+```                        
+
+The random forest grwon with leave one out cross validation for the splitting on variables while growing trees, produces an accuracy of `r default_rfcv_mod$results$Accuracy[-1]` on the training set.
 
 
 # References
