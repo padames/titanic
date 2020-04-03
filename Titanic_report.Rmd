@@ -2,7 +2,9 @@
 title: "Kaggle Titanic Data Analysis Report"
 author: "P. Adames"
 date: "4/2/2020"
-output: html_document
+output:
+  html_document: default
+  pdf_document: default
 bibliography: titanic.bib
 ---
 
@@ -95,14 +97,23 @@ Similarly, `r dim(titanic_test)[1]-dim(titanic_test_clean)[1]` records were remo
 
 ## Data exploration
 
-Using the R package `rattle`, some basic statistics were observed.
+Using the R package `rattle` [@WilliamsGraham2011DMwR], some basic statistics were observed.
 
-The actual proportion of passengers that died according to [@Wikipedia.titanic.passengers] was `r 1496/2208 * 100`
+The actual proportion of passengers that died according to [@Wikipedia.titanic.passengers] was `r 1496/2208 * 100`, the training data has a casualty ratio of `r 196/(196+133) * 100`. 
+The distribution by age and the fraction by gender can be seen int he two plots below.
 
 
 ```{r pressure, echo=FALSE, out.width='50%'}
 knitr::include_graphics('./img/Rattle-Age-Distribution-Rattle.png')
 ```
+
+```{r echo=FALSE, out.width='60%'}
+#knitr::include_graphics('./img/Rattle-Mosaic-SurvivelByGender.png')
+knitr::include_graphics('./img/Rattle-HistSurvivedByGender.png')
+```
+
+
+
 
 <!-- Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot. -->
 
