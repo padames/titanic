@@ -108,14 +108,64 @@ knitr::include_graphics('./img/Rattle-Age-Distribution-Rattle.png')
 ```
 
 ```{r echo=FALSE, out.width='60%'}
-#knitr::include_graphics('./img/Rattle-Mosaic-SurvivelByGender.png')
 knitr::include_graphics('./img/Rattle-HistSurvivedByGender.png')
 ```
 
+A clustering analysis with KMeans and two clusters, one with 302 passengers and a second one with 27. Between the two they explain 71.12% of the point variability of the data.
+The cluster centers are:
+
+       Age     SibSp     Parch      Fare
+1 30.11947 0.5430464 0.3874172  23.81876
+2 33.10815 0.7037037 1.0740741 174.72669
+
+Their plot appear below:
+
+```{r echo=FALSE, out.width='60%'}
+knitr::include_graphics('./img/Rattle-KMeansclustering.png')
+```
+
+These clusters may indicate that there are data does naturally separate in two groups but the meaning of these clusters isn't very clear. Another analysis shows that the number of clusters stabilizes after approximately 5.
+
+### Exploration with a generalized linear model
+
+Using the `rattle` package a quick generalize linear model with the `probit` function showed how the statistically significant coefficients were those of the variables:
+
+    1. `SibSp`: number of siblings and/or spouse
+    2. `Age`
+    3. `TFC_Pclass(1,2]`: first and second class passengers
+    4. `TFC_Pclass(2,3] : third class passengers
+    5. `TFC_R01_TNM_Sex(0,1]`: the gender of the passenger, 0 for female, 1 for male    
+    
+
+```
+Summary of the Probit Regression model (built using glm):
+
+Call:
+glm(formula = TFC_Survived ~ ., family = binomial(link = "probit"), 
+    data = crs$dataset[crs$train, c(crs$input, crs$target)])
+
+Deviance Residuals: 
+    Min       1Q   Median       3Q      Max  
+-2.2590  -0.7393  -0.3666   0.5816   2.5985  
+
+Coefficients:
+                        Estimate  Std. Error z value   Pr(>|z|)    
+(Intercept)            5.5917216 146.9544573   0.038    0.96965    
+Age                   -0.0199283   0.0067510  -2.952    0.00316 ** 
+SibSp                 -0.2234184   0.1020782  -2.189    0.02862 *  
+Parch                 -0.0370586   0.1216786  -0.305    0.76070    
+Fare                  -0.0001906   0.0024013  -0.079    0.93672    
+EmbarkedC             -3.3562126 146.9542888  -0.023    0.98178    
+EmbarkedQ             -2.8990208 146.9549656  -0.020    0.98426    
+EmbarkedS             -3.3481248 146.9542837  -0.023    0.98182    
+TFC_Pclass(1,2]       -0.6508577   0.2950677  -2.206    0.02740 *  
+TFC_Pclass(2,3]       -1.3804582   0.3034635  -4.549 0.00000539 ***
+TFC_R01_TNM_Sex(0,1]  -1.6522252   0.1792327  -9.218    < 2e-16 ***
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+```
 
 
-
-<!-- Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot. -->
 
 
 # References
