@@ -1,5 +1,4 @@
 
-
 ## remove records with any NAs
 titanic_train_clean <- titanic_train[complete.cases(titanic_train), ]
 dim(titanic_train_clean)

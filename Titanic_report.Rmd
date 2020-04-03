@@ -99,13 +99,18 @@ Similarly, `r dim(titanic_test)[1]-dim(titanic_test_clean)[1]` records were remo
 
 Using the R package `rattle` [@WilliamsGraham2011DMwR], some basic statistics were observed.
 
-The actual proportion of passengers that died according to [@Wikipedia.titanic.passengers] was `r 1496/2208 * 100`, the training data has a casualty ratio of `r 196/(196+133) * 100`. 
+The actual proportion of passengers that died according to [@Wikipedia.titanic.passengers] was `r format(round(1496/2208 * 100, 2), nsmall = 2)`, the training data has a casualty ratio of `r format(round(196/(196+133) * 100, 2), nsmall=2)`. 
 The distribution by age and the fraction by gender can be seen int he two plots below.
 
-
-```{r pressure, echo=FALSE, out.width='50%'}
-knitr::include_graphics('./img/Rattle-Age-Distribution-Rattle.png')
+```{r "Age distribution by survival", echo=FALSE}
+library(ggplot2)
+theme_set(theme_classic())
+g <- ggplot(titanic_train_clean, aes(x=Survived, y=Age, fill= Sex)) +
+    geom_bar(stat="identity", width = 0.75, position = "dodge") +
+    labs(title = "Bar plot for age and survivor status",subtitle = "Discriminated by gender")
+plot(g)
 ```
+
 
 ```{r echo=FALSE, out.width='60%'}
 knitr::include_graphics('./img/Rattle-HistSurvivedByGender.png')
@@ -132,8 +137,8 @@ Using the `rattle` package a quick generalize linear model with the `probit` fun
 
     1. `SibSp`: number of siblings and/or spouse
     2. `Age`
-    3. `TFC_Pclass(1,2]`: first and second class passengers
-    4. `TFC_Pclass(2,3] : third class passengers
+    3. `TFC_Pclass(1,2]`: first class passengers
+    4. `TFC_Pclass(2,3] : second class passengers
     5. `TFC_R01_TNM_Sex(0,1]`: the gender of the passenger, 0 for female, 1 for male    
     
 
@@ -164,6 +169,62 @@ TFC_R01_TNM_Sex(0,1]  -1.6522252   0.1792327  -9.218    < 2e-16 ***
 ---
 Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ```
+
+### Numerical variables
+
+The input numerical variables are `Age`, `SibSp`, `Parch`, and `Fare`.
+The variables `SibSp`, the number od siblings and spouses, can be treated as acontinuous value between 0 and the max observed in the data, 5.
+
+
+The variable `Age` has a distribution that is centered around central values so a min max scaler could be appropriate to aid some of the predictors deal with different scales among variables.
+
+
+```{r "Age distribution", echo=FALSE}
+library(ggplot2)
+theme_set(theme_classic())
+g <- ggplot(titanic_train_clean, aes(Age)) +
+    geom_density(aes(fill=Sex), alpha=0.8) +
+    labs(title = "Density plot for Age",subtitle = "Discriminated by gender")
+plot(g)
+```
+
+```{r "SibSp distribution", echo=FALSE}
+hist(titanic_train_clean$SibSp)
+```
+It also shows high values for skewness 2.265915 and kurtosis 5.217676. This indicates that this variable needs to be scaled with a standard scaler.
+
+`Parch`, the number of parents and children accompanying the passenger, can also be treated as a continuous independent variable.
+
+```{r "Parch distribution", echo=FALSE}
+hist(titanic_train_clean$Parch)
+```
+As the histogram shows and the values of skewness 1.836532 kurtosis 3.152783 indicate it should also be normalized with a standard scaler.
+
+Finaly `Fare` shows a very skewed distribution towards the low values. This is confirmed by the statistics of the variable: a mean of 36.20, a median of 16.70, a standard deviation of 52.52, skeness 4.050455, and kurtosis 24.262948. Therefore a standard scaler is th recommended preprocessing.
+
+```{r "Fare distribution", echo=FALSE}
+hist(titanic_train_clean$Fare)
+```
+
+
+
+### Categorical variables 
+
+The input categorical variables are `Sex` for gender Female (0) or Male (1), `Pclass` for the passenger category assigned by the shipping company, 1st, 2nd, or 3rd, en encoded as 1, 2 or 3, and treated as a continuous variable here that will be normalized with min max.
+
+The dependent or predicted variable is `Survived` that takes 196 (59.6%) negative outcomes  represented as 0 and 133 (40.4%) positive results represented as 1. 
+
+
+## Distributions
+
+
+
+# Model building
+
+
+## Decision tree
+
+
 
 
 
