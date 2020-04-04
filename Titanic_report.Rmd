@@ -222,8 +222,13 @@ Only the numerical variables identified in the previous section were normalized.
 ```{r "standarization"}
 library(caret)
 preObj <- preProcess(titanic_train_clean[,c("Age","SibSp","Parch","Fare")], method = c("center","scale", "BoxCox"))
+```
+
+### Preparing the data set for model training
+
+```{r "preparing the training data set for model building"}
 # sibsbstd <- predict(preObj, titanic_train_clean[,c(6,7,8,9)])$SibSp
-titanic_train_transformed <- predict(preObj, titanic_train_clean[,c("Age","SibSp","Parch","Fare")])
+titanic_train_transformed <- predict(preObj, newdata = titanic_train_clean[,c("Age","SibSp","Parch","Fare")])
 titanic_train_scaled <- cbind(titanic_train_clean[,c("PassengerId","Pclass","Sex","Embarked", "Survived")], titanic_train_transformed)
 titanic_train_scaled$Survived <- as.factor(titanic_train_scaled$Survived)
 titanic_train_scaled$Pclass <- as.factor(titanic_train_scaled$Pclass)
@@ -232,12 +237,24 @@ titanic_train_scaled$Pclass <- as.factor(titanic_train_scaled$Pclass)
 The variables `Name` and `Cabin` were dropped from this data frame because they hold very little meaning for prediction.
 
 
+### Preparing the data set for prediction
+
+The test set has to be transformed in the same fashion as the training set, in this case using the same preprocessing object.
+
+
+```{r "preparing the test set for prediction", echo=TRUE}
+titanic_test_transformed <- predict(preObj, titanic_test_clean[,c("Age","SibSp","Parch","Fare")])
+titanic_test_scaled <- cbind(titanic_test_clean[,c("PassengerId","Pclass","Sex","Embarked")], titanic_test_transformed)
+titanic_test_scaled$Pclass <- as.factor(titanic_test_scaled$Pclass)
+```
+
+
 # Model building
 
 
 ## Logistic regression
 
-```{r "logistic regression"}
+```{r "logistic regression", message=FALSE, warning=FALSE}
 set.seed(112233)
 default_glm_mod = train(form = Survived ~ .,
                         data = titanic_train_scaled,
@@ -253,7 +270,7 @@ default_glm_mod
 
 Lets run a default XGBoost model.
 
-```{r default xGBoost model}
+```{r "default xGBoost model", echo=FALSE}
 set.seed(112233)
 library(parallel) 
 no_cores <- detectCores() - 1
@@ -263,8 +280,8 @@ registerDoParallel(cl)
 
 grid_default <- expand.grid(
   nrounds = 100,
-  max_depth = 6,
-  eta = 0.3,
+  max_depth = 4,
+  eta = 0.025,
   gamma = 0,
   colsample_bytree = 1,
   min_child_weight = 1,
@@ -286,109 +303,20 @@ xgb_base <- caret::train(
   verbose = TRUE
 )
 stopCluster(cl)
-xgb_base
+xgb_base$bestTune
 ```
 
-The learning rate is the equivalent of a step size in the grandient search of the boosting algorithm.
-The search for an optimum shows very little room for improvemnet
+### Obtaining the predictions
 
-```{r "optimizing hyperparameters learning rate xGBoost", echo=FALSE }
-set.seed(112233)
-library(parallel) 
-no_cores <- detectCores() - 1
-library(doParallel)
-cl <- makePSOCKcluster(no_cores)
-registerDoParallel(cl)
+Once the model is fitted to the training data the test data is used to make the prediction and the result is saved to a `.csv` file in the folder for results to be submitted to Kaggle.
 
-nrounds <- 1000
-tune_grid <- expand.grid(
-  nrounds = seq(from = 200, to = nrounds, by = 50),
-  eta = c(0.025, 0.1, 0.3),
-  max_depth = c(1),
-  gamma = 0,
-  colsample_bytree = 1,
-  min_child_weight = 1,
-  subsample = 1
-)
-tune_control <- caret::trainControl(
-  method = "cv", # cross-validation
-  number = 3, # with n folds 
-  #index = createFolds(tr_treated$Id_clean), # fix the folds
-  verboseIter = FALSE, # no training log
-  allowParallel = TRUE # FALSE for reproducible results 
-)
-xgb_tune <- caret::train(
-  form = Survived ~ ., 
-  data = titanic_train_scaled,
-  trControl = tune_control,
-  tuneGrid = tune_grid,
-  method = "xgbTree",
-  verbose = TRUE
-)
-
-# helper function for the plots
-tuneplot <- function(x, probs = .90) {
-  ggplot(x) +
-    coord_cartesian(ylim = c(quantile(x$results$Acuracy, probs = probs), min(x$results$Accuracy))) +
-    theme_bw()
-}
-stopCluster(cl)
-tuneplot(xgb_tune)
-```
-
-```{r best xGBoost etha}
-xgb_tune$bestTune
-```
-The best value for the learning rate was `r xgb_tune$bestTune$eta`. Now let's optimize for the maximum depth of the trees.
-
-
-```{r "optimizing hyperparameters max depth xGBoost}
-set.seed(112233)
-library(parallel) 
-no_cores <- detectCores() - 1
-library(doParallel)
-cl <- makePSOCKcluster(no_cores)
-registerDoParallel(cl)
-
-tune_grid2 <- expand.grid(
-  nrounds = seq(from = 200, to = nrounds, by = 50),
-  eta = xgb_tune$bestTune$eta,
-  max_depth = c(2, 3, 4, 5, 6),
-  gamma = 0,
-  colsample_bytree = 1,
-  min_child_weight = 1,
-  subsample = 1
-)
-tune_control2 <- caret::trainControl(
-  method = "cv", # cross-validation
-  number = 3, # with n folds 
-  #index = createFolds(tr_treated$Id_clean), # fix the folds
-  verboseIter = FALSE, # no training log
-  allowParallel = TRUE # FALSE for reproducible results 
-)
-xgb_tune2 <- caret::train(
-  form = Survived ~ ., 
-  data = titanic_train_scaled,
-  trControl = tune_control2,
-  tuneGrid = tune_grid2,
-  method = "xgbTree",
-  verbose = TRUE
-)
-
-# # helper function for the plots
-# tuneplot <- function(x, probs = .90) {
-#   ggplot(x) +
-#     coord_cartesian(ylim = c(quantile(x$results$Acuracy, probs = probs), min(x$results$Accuracy))) +
-#     theme_bw()
-# }
-stopCluster(cl)
-tuneplot(xgb_tune2)
-
-```
-
-
-```{r, "xGBoost max depth"}
-xgb_tune2$bestTune
+```{r "preparing xgboost for submission to Kaggle"}
+survived_pred <- predict(xgb_base, newdata = titanic_test_scaled)
+survived_pred <- ifelse(survived_pred == 1, "0", "1")
+xgb_default_to_kaggle <- data.frame(PassengerId=titanic_test_scaled$PassengerId,
+                                    Survived=survived_pred,
+                                    stringsAsFactors = TRUE)
+write.csv(xgb_default_to_kaggle, file = "results/xgb_default.csv", row.names=FALSE, append = FALSE)
 ```
 
 
@@ -410,8 +338,22 @@ default_rf_mod <- train(form = Survived ~ .,
                         prox = TRUE)
 stopCluster(cl)
 default_rf_mod
-                
 ```                        
+
+### Obtaining the predictions
+
+Once the model is fitted to the training data the test data is used to make the prediction and the result is saved to a `.csv` file in the folder for results to be submitted to Kaggle.
+
+```{r "preparing xgboost for submission to Kaggle"}
+survived_pred_rf <- predict(default_rf_mod, newdata = titanic_test_scaled)
+survived_pred_rf <- ifelse(survived_pred == 1, "0", "1")
+rf_default_to_kaggle <- data.frame(PassengerId=titanic_test_scaled$PassengerId,
+                                    Survived=survived_pred_rf,
+                                    stringsAsFactors = TRUE)
+write.csv(rf_default_to_kaggle, file = "results/rf_default.csv", row.names=FALSE, append = FALSE)
+```
+
+
 
 
 Random forest with cross validation
@@ -437,5 +379,14 @@ stopCluster(cl)
 
 The random forest grwon with leave one out cross validation for the splitting on variables while growing trees, produces an accuracy of `r default_rfcv_mod$results$Accuracy[-1]` on the training set.
 
+
+## Support Vector Machine
+
+The support vector machine with the Radial basis Function kernel has sigma and cost as the hyperparameters to tune.
+
+```{r support vector machine svmRadial default}
+
+
+```
 
 # References
