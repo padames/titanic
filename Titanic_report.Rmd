@@ -249,8 +249,147 @@ default_glm_mod
 ```
 
 
+## xGBoost
 
-## Decision tree
+Lets run a default XGBoost model.
+
+```{r default xGBoost model}
+set.seed(112233)
+library(parallel) 
+no_cores <- detectCores() - 1
+library(doParallel)
+cl <- makePSOCKcluster(no_cores)
+registerDoParallel(cl)
+
+grid_default <- expand.grid(
+  nrounds = 100,
+  max_depth = 6,
+  eta = 0.3,
+  gamma = 0,
+  colsample_bytree = 1,
+  min_child_weight = 1,
+  subsample = 1
+)
+
+train_control <- caret::trainControl(
+  method = "none",
+  verboseIter = FALSE, # no training log
+  allowParallel = TRUE # FALSE for reproducible results 
+)
+
+xgb_base <- caret::train(
+  form = Survived ~ ., 
+  data = titanic_train_scaled,
+  trControl = train_control,
+  tuneGrid = grid_default,
+  method = "xgbTree",
+  verbose = TRUE
+)
+stopCluster(cl)
+xgb_base
+```
+
+The learning rate is the equivalent of a step size in the grandient search of the boosting algorithm.
+The search for an optimum shows very little room for improvemnet
+
+```{r "optimizing hyperparameters learning rate xGBoost", echo=FALSE }
+set.seed(112233)
+library(parallel) 
+no_cores <- detectCores() - 1
+library(doParallel)
+cl <- makePSOCKcluster(no_cores)
+registerDoParallel(cl)
+
+nrounds <- 1000
+tune_grid <- expand.grid(
+  nrounds = seq(from = 200, to = nrounds, by = 50),
+  eta = c(0.025, 0.1, 0.3),
+  max_depth = c(1),
+  gamma = 0,
+  colsample_bytree = 1,
+  min_child_weight = 1,
+  subsample = 1
+)
+tune_control <- caret::trainControl(
+  method = "cv", # cross-validation
+  number = 3, # with n folds 
+  #index = createFolds(tr_treated$Id_clean), # fix the folds
+  verboseIter = FALSE, # no training log
+  allowParallel = TRUE # FALSE for reproducible results 
+)
+xgb_tune <- caret::train(
+  form = Survived ~ ., 
+  data = titanic_train_scaled,
+  trControl = tune_control,
+  tuneGrid = tune_grid,
+  method = "xgbTree",
+  verbose = TRUE
+)
+
+# helper function for the plots
+tuneplot <- function(x, probs = .90) {
+  ggplot(x) +
+    coord_cartesian(ylim = c(quantile(x$results$Acuracy, probs = probs), min(x$results$Accuracy))) +
+    theme_bw()
+}
+stopCluster(cl)
+tuneplot(xgb_tune)
+```
+
+```{r best xGBoost etha}
+xgb_tune$bestTune
+```
+The best value for the learning rate was `r xgb_tune$bestTune$eta`. Now let's optimize for the maximum depth of the trees.
+
+
+```{r "optimizing hyperparameters max depth xGBoost}
+set.seed(112233)
+library(parallel) 
+no_cores <- detectCores() - 1
+library(doParallel)
+cl <- makePSOCKcluster(no_cores)
+registerDoParallel(cl)
+
+tune_grid2 <- expand.grid(
+  nrounds = seq(from = 200, to = nrounds, by = 50),
+  eta = xgb_tune$bestTune$eta,
+  max_depth = c(2, 3, 4, 5, 6),
+  gamma = 0,
+  colsample_bytree = 1,
+  min_child_weight = 1,
+  subsample = 1
+)
+tune_control2 <- caret::trainControl(
+  method = "cv", # cross-validation
+  number = 3, # with n folds 
+  #index = createFolds(tr_treated$Id_clean), # fix the folds
+  verboseIter = FALSE, # no training log
+  allowParallel = TRUE # FALSE for reproducible results 
+)
+xgb_tune2 <- caret::train(
+  form = Survived ~ ., 
+  data = titanic_train_scaled,
+  trControl = tune_control2,
+  tuneGrid = tune_grid2,
+  method = "xgbTree",
+  verbose = TRUE
+)
+
+# # helper function for the plots
+# tuneplot <- function(x, probs = .90) {
+#   ggplot(x) +
+#     coord_cartesian(ylim = c(quantile(x$results$Acuracy, probs = probs), min(x$results$Accuracy))) +
+#     theme_bw()
+# }
+stopCluster(cl)
+tuneplot(xgb_tune2)
+
+```
+
+
+```{r, "xGBoost max depth"}
+xgb_tune2$bestTune
+```
 
 
 ## Random forests
