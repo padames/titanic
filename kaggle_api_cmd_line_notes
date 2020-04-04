@@ -96,7 +96,7 @@ Last update: April 1, 2013:
    
    Saved the kaggle.json file to ~/.kaggle/ and then:
    
-   $ $ kaggle --version
+   $ kaggle --version
     Warning: Your Kaggle API key is readable by other users on this system!
         To fix this, you can run 'chmod 600 /home/pablo/.kaggle/kaggle.json'
     Kaggle API 1.5.6
@@ -119,10 +119,13 @@ Last update: April 1, 2013:
   
 
 5. Reading the contents of the file downloaded wihtout decompresing it:
-    $> unzip("titanic.zip", list = TRUE)
+    $ unzip("titanic.zip", list = TRUE)
                        Name     Length                Date
     1 gender_submission.csv 4294967295 2019-12-11 02:17:00
     2              test.csv 4294967295 2019-12-11 02:17:00
     3             train.csv 4294967295 2019-12-11 02:17:00
 
-
+6. After preparing result the submission can be done one file at a time:
+    $ kaggle competitions submit -c titanic -f results/xgb_default.csv -m "xGBoost"
+    100%|                                                 | 2.85k/2.85k [00:02<00:00, 1.26kB/s]
+    Successfully submitted to Titanic: Machine Learning from Disaster

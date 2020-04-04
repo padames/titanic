@@ -3,9 +3,7 @@ title: "Kaggle Titanic Data Analysis Report"
 author: "P. Adames"
 date: "4/2/2020"
 output:
-  html_document: 
-    fig_caption: yes
-    toc: yes
+  html_document: default
   pdf_document: default
 bibliography: titanic.bib
 ---
@@ -218,19 +216,17 @@ The dependent or predicted variable is `Survived` that takes 196 (59.6%) negativ
 
 Only the numerical variables identified in the previous section were normalized. The `preObj` should be used to train and predict with the test data set for consistency. 
 
-```{r "standarization"}
+```{r "preprocesing"}
 library(caret)
-preObj <- preProcess(titanic_train_clean[,c("Age","SibSp","Parch","Fare")], method = c("center","scale", "BoxCox", "knnImpute"))
+titanic_train_clean <- subset( titanic_train_clean, select =-Age)
+preObj <- preProcess(titanic_train_clean[,c("SibSp","Parch","Fare")], method = c("center","scale", "BoxCox", "knnImpute"))
 ```
-
-To avoid the effect of missing results in the predictions due to the fact that there are missing values in the `Age` predictor I used K-nearest neighbours imputation as part of the preprocessing. This method with _k=10_ find the 10 nearest data vectors that look most like the data vector with the missing value and fills it in with the average value from the cluster at that position.  This gave slightly better results that not using this predictor to train the models.
-
 
 ### Preparing the data set for model training
 
 ```{r "preparing the training data set for model building"}
 # sibsbstd <- predict(preObj, titanic_train_clean[,c(6,7,8,9)])$SibSp
-titanic_train_transformed <- predict(preObj, newdata = titanic_train_clean[,c("Age","SibSp","Parch","Fare")])
+titanic_train_transformed <- predict(preObj, newdata = titanic_train_clean[,c("SibSp","Parch","Fare")])
 titanic_train_scaled <- cbind(titanic_train_clean[,c("PassengerId","Pclass","Sex","Embarked", "Survived")], titanic_train_transformed)
 titanic_train_scaled$Survived <- as.factor(titanic_train_scaled$Survived)
 titanic_train_scaled$Pclass <- as.factor(titanic_train_scaled$Pclass)
@@ -245,7 +241,8 @@ The test set has to be transformed in the same fashion as the training set, in t
 
 
 ```{r "preparing the test set for prediction", echo=TRUE}
-titanic_test_transformed <- predict(preObj, titanic_test[,c("Age","SibSp","Parch","Fare")])
+titanic_test <- subset( titanic_test, select =-Age)
+titanic_test_transformed <- predict(preObj, titanic_test[,c("SibSp","Parch","Fare")])
 titanic_test_scaled <- cbind(titanic_test[,c("PassengerId","Pclass","Sex","Embarked")], titanic_test_transformed)
 titanic_test_scaled$Pclass <- as.factor(titanic_test_scaled$Pclass)
 ```
@@ -266,18 +263,6 @@ default_glm_mod = train(form = Survived ~ .,
 
 default_glm_mod
 ```
-
-
-```{r "preparing logit for submission to Kaggle"}
-survived_pred_glm <- predict(xgb_base, newdata = titanic_test_scaled)
-survived_pred_glm <- ifelse(survived_pred_glm == 1, "0", "1")
-glm_default_to_kaggle <- data.frame(PassengerId=titanic_test_scaled$PassengerId,
-                                    Survived=survived_pred_glm,
-                                    stringsAsFactors = TRUE)
-write.csv(glm_default_to_kaggle, file = "results/glm_default.csv", row.names=FALSE, append = FALSE)
-```
-The logistic regression model got a score of `0.24401` on Kaggle.
-
 
 
 ## xGBoost
@@ -333,8 +318,6 @@ xgb_default_to_kaggle <- data.frame(PassengerId=titanic_test_scaled$PassengerId,
 write.csv(xgb_default_to_kaggle, file = "results/xgb_default.csv", row.names=FALSE, append = FALSE)
 ```
 
-These results obtained a score of `0.21531` on Kaggle.
-
 
 ## Random forests
 
@@ -369,7 +352,7 @@ rf_default_to_kaggle <- data.frame(PassengerId=titanic_test_scaled$PassengerId,
 write.csv(rf_default_to_kaggle, file = "results/rf_default.csv", row.names=FALSE, append = FALSE)
 ```
 
-The results form this model received a Kaggle score of `0.22966`.
+
 
 
 Random forest with cross validation
@@ -389,11 +372,11 @@ default_rfcv_mod <- train(form = Survived ~ .,
                         method = "rf",
                         trControl= trainControl(method = "LOOCV", p = 0.1, allowParallel = TRUE),
                         prox = TRUE)
-stopCluster(cl)
 default_rfcv_mod
+stopCluster(cl)
 ```                        
 
-The random forest grown with _leave one out cross validation_ for the splitting on variables while growing trees, produces an accuracy of `r default_rfcv_mod$results$Accuracy[-1]` on the training set. However this translates into a Kaggle score of `0.22966`, identical to the one obtained for the regular random forest.
+The random forest grwon with leave one out cross validation for the splitting on variables while growing trees, produces an accuracy of `r default_rfcv_mod$results$Accuracy[-1]` on the training set.
 
 ```{r "preparing random forest loocv for submission to Kaggle"}
 survived_pred_rfloocv <- predict(default_rf_mod, newdata = titanic_test_scaled)
@@ -405,72 +388,14 @@ write.csv(rfloocv_default_to_kaggle, file = "results/rf_loocv_default.csv", row.
 ```
 
 
+
 ## Support Vector Machine
 
 The support vector machine with the Radial basis Function kernel has sigma and cost as the hyperparameters to tune.
 
-```{r support vector machine svmLinear default}
-set.seed(112233)
-library(parallel) 
-# Calculate the number of cores
-no_cores <- detectCores() - 1
+```{r support vector machine svmRadial default}
 
-library(doParallel)
-cl <- makePSOCKcluster(no_cores)
-registerDoParallel(cl) 
-
-default_svm_linear <- train(form = Survived ~ ., 
-                        data = titanic_train_scaled,
-                        method = "svmLinear",
-                        trControl= trainControl(method = "repeatedcv", number=10, repeats = 3, allowParallel = TRUE),
-                        tuneLength = 10)
-stopCluster(cl)
-default_svm_linear
 
 ```
-The training accuracy was `r default_svm_linear$results$Accuracy` with the linear kernel.
-
-```{r "preparing random forest loocv for submission to Kaggle"}
-survived_pred_svmLin <- predict(default_svm_linear, newdata = titanic_test_scaled)
-survived_pred_svmLin <- ifelse(survived_pred_svmLin == 1, "0", "1")
-svmlinear_default_to_kaggle <- data.frame(PassengerId=titanic_test_scaled$PassengerId,
-                                    Survived=survived_pred_svmLin,
-                                    stringsAsFactors = TRUE)
-write.csv(svmlinear_default_to_kaggle, file = "results/svmlinear_default.csv", row.names=FALSE, append = FALSE)
-```
-
-
-
-```{r support vector machine lssvmRadial default}
-set.seed(112233)
-library(parallel) 
-# Calculate the number of cores
-no_cores <- detectCores() - 1
-
-library(doParallel)
-cl <- makePSOCKcluster(no_cores)
-registerDoParallel(cl) 
-
-default_svm_lsRadial <- train(form = Survived ~ ., 
-                        data = titanic_train_scaled,
-                        method = "lssvmRadial",
-                        trControl= trainControl(method = "repeatedcv", number=10, repeats = 3, allowParallel = TRUE),
-                        tuneLength = 10)
-stopCluster(cl)
-default_svm_lsRadial
-
-```
-The training accuracy was `r default_svm_linear$results$Accuracy` with the linear kernel.
-
-```{r "preparing random forest loocv for submission to Kaggle"}
-survived_pred_svmlsR <- predict(default_svm_lsRadial, newdata = titanic_test_scaled)
-survived_pred_svmlsR <- ifelse(survived_pred_svmlsR == 1, "0", "1")
-svm_lsradial_default_to_kaggle <- data.frame(PassengerId=titanic_test_scaled$PassengerId,
-                                    Survived=survived_pred_svmlsR,
-                                    stringsAsFactors = TRUE)
-write.csv(svm_lsradial_default_to_kaggle, file = "results/svm_lsRadial_default.csv", row.names=FALSE, append = FALSE)
-```
-
-
 
 # References
