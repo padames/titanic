@@ -84,7 +84,7 @@ All the rows with mising values were removed. As a result, there was a reduction
 
 The actual proportion of passengers that died according to [@Wikipedia.titanic.passengers] was `r format(round(1496/2208 * 100, 2), nsmall = 2)`%, the training data has a non-survival proportion of `r format(round(196/(196+133) * 100, 2), nsmall=2)`%. It is close but the sampling did not consider this proportion.
 
-```{r "Age distribution by survival", echo=FALSE, fig.width=2, message=FALSE, warning=FALSE, paged.print=FALSE}
+```{r "Age distribution by survival", echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
 library(ggplot2)
 theme_set(theme_classic())
 g <- ggplot(titanic_train_clean, aes(x=Survived, y=Age, fill= Sex)) +
@@ -108,7 +108,7 @@ The cluster centers are:
 
 Their plot appear below:
 
-```{r echo=FALSE, fig.width=2, out.width='60%'}
+```{r echo=FALSE, out.width='60%'}
 knitr::include_graphics('./img/Rattle-KMeansclustering.png')
 ```
 
@@ -131,7 +131,7 @@ The input numerical variables are `Age`, `SibSp`, `Parch`, and `Fare`.
 
 `Age` has a relatively centered distribution.
 
-```{r "Age distribution", echo=FALSE, fig.width=2, message=FALSE, warning=FALSE, paged.print=FALSE}
+```{r "Age distribution", echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
 library(ggplot2)
 theme_set(theme_classic())
 g <- ggplot(titanic_train_clean, aes(Age)) +
@@ -142,7 +142,7 @@ plot(g)
 
 The variable `SibSp`, the number of siblings and spouse, can be treated as a continuous value between 0 and the maximum observed in the data, 5.
 
-```{r "SibSp distribution", echo=FALSE, fig.width=2, message=FALSE, warning=FALSE, paged.print=FALSE}
+```{r "SibSp distribution", echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
 hist(titanic_train_clean$SibSp)
 ```
 It also shows high values for skewness 2.265915 and kurtosis 5.217676. This indicates that this variable needs to be scaled with a standard scaler.
@@ -150,7 +150,7 @@ It also shows high values for skewness 2.265915 and kurtosis 5.217676. This indi
 
 `Parch`, the number of parents and children accompanying the passenger, can also be treated as a continuous predictor.
 
-```{r "Parch distribution", echo=FALSE, fig.width=2, message=FALSE, warning=FALSE, paged.print=FALSE}
+```{r "Parch distribution", echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
 hist(titanic_train_clean$Parch)
 ```
 
@@ -158,7 +158,7 @@ As the histogram shows and the values of skewness 1.836532 kurtosis 3.152783 ind
 
 Finally, `Fare` shows a very skewed distribution towards the low values. This is confirmed by the statistics of the variable: a mean of 36.20, a median of 16.70, a standard deviation of 52.52, skeness 4.050455, and kurtosis 24.262948. Therefore a standard scaler is th recommended preprocessing.
 
-```{r "Fare distribution", echo=FALSE, fig.width=2}
+```{r "Fare distribution", echo=FALSE}
 hist(titanic_train_clean$Fare)
 ```
 
@@ -507,6 +507,6 @@ I did not have the opportunity of doing more systematic hyperparameter tuning, e
 
 The small data set and the small number of predictors discouraged my the use of neural networks. 
 
-The best entry in Kaggle scored `0.33971` for the Bayes generalized linear model. This is a Bayesian logistic regression with a reputation for being more stable numerically and computationally than the simple logistic regression. The coefficients are given prior Student-t distributions to build a Naive Bayes estimator, using an Expectation-Maximization algorithm and a weighted least squares error reduction step.
+The best entry in Kaggle scored `0.33971` for the Bayes generalized linear model. This is a Bayesian logistic regression with a reputation for being more stable numerically and computationally than the simple logistic regression. The coefficients are given a prior Student-t distributions to build a Naive Bayes estimator, using an Expectation-Maximization algorithm and a weighted least squares error reduction step.
 
 # References
