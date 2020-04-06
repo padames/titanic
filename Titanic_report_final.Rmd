@@ -187,7 +187,10 @@ To avoid missing predictions due to missing values in `Age` in the test set, I u
 ```{r "preparing the training data set for model building", message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE}
 # sibsbstd <- predict(preObj, titanic_train_clean[,c(6,7,8,9)])$SibSp
 titanic_train_transformed <- predict(preObj, newdata = titanic_train_clean[,c("Age","SibSp","Parch","Fare")])
-titanic_train_scaled <- cbind(titanic_train_clean[,c("PassengerId","Pclass","Sex","Embarked", "Survived")], titanic_train_transformed)
+# titanic_train_scaled <- cbind(titanic_train_clean[,c("PassengerId","Pclass","Sex","Embarked", "Survived")], titanic_train_transformed)
+
+titanic_train_scaled <- cbind(titanic_train_clean[,c("Pclass","Sex","Embarked", "Survived")], titanic_train_transformed)
+
 titanic_train_scaled$Survived <- as.factor(titanic_train_scaled$Survived)
 titanic_train_scaled$Pclass <- as.factor(titanic_train_scaled$Pclass)
 ```
@@ -202,7 +205,9 @@ The test set was transformed in the same fashion as the training set, in this ca
 
 ```{r "preparing the test set for prediction", message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE}
 titanic_test_transformed <- predict(preObj, titanic_test[,c("Age","SibSp","Parch","Fare")])
-titanic_test_scaled <- cbind(titanic_test[,c("PassengerId","Pclass","Sex","Embarked")], titanic_test_transformed)
+# titanic_test_scaled <- cbind(titanic_test[,c("PassengerId","Pclass","Sex","Embarked")], titanic_test_transformed)
+titanic_test_scaled <- cbind(titanic_test[,c("Pclass","Sex","Embarked")], titanic_test_transformed)
+
 titanic_test_scaled$Pclass <- as.factor(titanic_test_scaled$Pclass)
 ```
 
@@ -235,8 +240,8 @@ The accuracy on the training set was `r LMT_model$results$Accuracy[-1]` with Kap
 ```{r "preparing logistic model trees for submission to Kaggle", message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE}
 survived_pred_lmt<- predict(LMT_model, newdata = titanic_test_scaled)
 survived_pred_lmt<- ifelse(survived_pred_lmt
-                          == 1, "0", "1")
-lmt_to_kaggle <- data.frame(PassengerId=titanic_test_scaled$PassengerId,
+                          == 1, "1", "0")
+lmt_to_kaggle <- data.frame(PassengerId=titanic_test$PassengerId,
                             Survived=survived_pred_lmt,
                             stringsAsFactors = TRUE)
 write.csv(lmt_to_kaggle, file = "results/lmt_default.csv", row.names=FALSE)
@@ -267,7 +272,7 @@ The accuracy on the training set was `0.7868` with a Kappa value of `0.5538`.
 
 ```{r "preparing bayesglm for submission to Kaggle", message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE}
 survived_pred_bayes_glm <- predict(bayes_glm, newdata = titanic_test_scaled)
-survived_pred_bayes_glm <- ifelse(survived_pred_bayes_glm == 1, "0", "1")
+survived_pred_bayes_glm <- ifelse(survived_pred_bayes_glm == 1, "1", "0")
 bayes_glm_to_kaggle <- data.frame(PassengerId=titanic_test_scaled$PassengerId,
                                     Survived=survived_pred_bayes_glm,
                                     stringsAsFactors = TRUE)
@@ -294,7 +299,7 @@ This model shows and accuracy of `r default_glm_mod$results$Accuracy` on the tra
 
 ```{r "preparing logit for submission to Kaggle", include=FALSE}
 survived_pred_glm <- predict(default_glm_mod, newdata = titanic_test_scaled)
-survived_pred_glm <- ifelse(survived_pred_glm == 1, "0", "1")
+survived_pred_glm <- ifelse(survived_pred_glm == 1, "1", "0")
 glm_default_to_kaggle <- data.frame(PassengerId=titanic_test_scaled$PassengerId,
                                     Survived=survived_pred_glm,
                                     stringsAsFactors = TRUE)
@@ -347,7 +352,7 @@ xgb_base$bestTune
 
 ```{r "preparing xgboost for submission to Kaggle", include=FALSE}
 survived_pred_xgb <- predict(xgb_base, newdata = titanic_test_scaled)
-survived_pred_xgb <- ifelse(survived_pred_xgb == 1, "0", "1")
+survived_pred_xgb <- ifelse(survived_pred_xgb == 1, "1", "0")
 xgb_default_to_kaggle <- data.frame(PassengerId=titanic_test_scaled$PassengerId,
                                     Survived=survived_pred_xgb,
                                     stringsAsFactors = TRUE)
@@ -379,7 +384,7 @@ default_rf_mod
 
 ```{r "preparing random forest for submission to Kaggle", include=FALSE}
 survived_pred_rf <- predict(default_rf_mod, newdata = titanic_test_scaled)
-survived_pred_rf <- ifelse(survived_pred_rf == 1, "0", "1")
+survived_pred_rf <- ifelse(survived_pred_rf == 1, "1", "0")
 rf_default_to_kaggle <- data.frame(PassengerId=titanic_test_scaled$PassengerId,
                                     Survived=survived_pred_rf,
                                     stringsAsFactors = TRUE)
@@ -414,7 +419,7 @@ The random forest grown with _leave one out cross validation_ for the splitting 
 
 ```{r "preparing random forest loocv for submission to Kaggle", include=FALSE}
 survived_pred_rfloocv <- predict(default_rf_mod, newdata = titanic_test_scaled)
-survived_pred_rfloocv <- ifelse(survived_pred_rfloocv == 1, "0", "1")
+survived_pred_rfloocv <- ifelse(survived_pred_rfloocv == 1, "1", "0")
 rfloocv_default_to_kaggle <- data.frame(PassengerId=titanic_test_scaled$PassengerId,
                                     Survived=survived_pred_rfloocv,
                                     stringsAsFactors = TRUE)
@@ -449,7 +454,7 @@ The training accuracy was `r default_svm_linear$results$Accuracy` with the linea
 
 ```{r "preparing svm linear kernel for submission to Kaggle", include=FALSE}
 survived_pred_svmLin <- predict(default_svm_linear, newdata = titanic_test_scaled)
-survived_pred_svmLin <- ifelse(survived_pred_svmLin == 1, "0", "1")
+survived_pred_svmLin <- ifelse(survived_pred_svmLin == 1, "1", "0")
 svmlinear_default_to_kaggle <- data.frame(PassengerId=titanic_test_scaled$PassengerId,
                                     Survived=survived_pred_svmLin,
                                     stringsAsFactors = TRUE)
@@ -485,7 +490,7 @@ The training accuracy was `r default_svm_linear$results$Accuracy[-1]` with the l
 
 ```{r "preparing svm least square support Radial Basis Kernel for submission to Kaggle", include=FALSE}
 survived_pred_svmlsR <- predict(default_svm_lsRadial, newdata = titanic_test_scaled)
-survived_pred_svmlsR <- ifelse(survived_pred_svmlsR == 1, "0", "1")
+survived_pred_svmlsR <- ifelse(survived_pred_svmlsR == 1, "1", "0")
 svm_lsradial_default_to_kaggle <- data.frame(PassengerId=titanic_test_scaled$PassengerId,
                                     Survived=survived_pred_svmlsR,
                                     stringsAsFactors = TRUE)
