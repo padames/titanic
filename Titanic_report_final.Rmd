@@ -3,10 +3,10 @@ title: "Kaggle Titanic Data Analysis Report"
 author: "P. Adames (284546)"
 date: "4/3/2020"
 output:
-  pdf_document: default
   html_document: 
     fig_caption: yes
     toc: yes
+  pdf_document: default
 bibliography: titanic.bib
 ---
 
@@ -273,7 +273,7 @@ The accuracy on the training set was `0.7868` with a Kappa value of `0.5538`.
 ```{r "preparing bayesglm for submission to Kaggle", message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE}
 survived_pred_bayes_glm <- predict(bayes_glm, newdata = titanic_test_scaled)
 survived_pred_bayes_glm <- ifelse(survived_pred_bayes_glm == 1, "1", "0")
-bayes_glm_to_kaggle <- data.frame(PassengerId=titanic_test_scaled$PassengerId,
+bayes_glm_to_kaggle <- data.frame(PassengerId=titanic_test$PassengerId,
                                     Survived=survived_pred_bayes_glm,
                                     stringsAsFactors = TRUE)
 write.csv(bayes_glm_to_kaggle, file = "results/bayes_glm.csv", row.names=FALSE, append = FALSE)
@@ -300,7 +300,7 @@ This model shows and accuracy of `r default_glm_mod$results$Accuracy` on the tra
 ```{r "preparing logit for submission to Kaggle", include=FALSE}
 survived_pred_glm <- predict(default_glm_mod, newdata = titanic_test_scaled)
 survived_pred_glm <- ifelse(survived_pred_glm == 1, "1", "0")
-glm_default_to_kaggle <- data.frame(PassengerId=titanic_test_scaled$PassengerId,
+glm_default_to_kaggle <- data.frame(PassengerId=titanic_test$PassengerId,
                                     Survived=survived_pred_glm,
                                     stringsAsFactors = TRUE)
 write.csv(glm_default_to_kaggle, file = "results/glm_default.csv", row.names=FALSE, append = FALSE)
@@ -353,7 +353,7 @@ xgb_base$bestTune
 ```{r "preparing xgboost for submission to Kaggle", include=FALSE}
 survived_pred_xgb <- predict(xgb_base, newdata = titanic_test_scaled)
 survived_pred_xgb <- ifelse(survived_pred_xgb == 1, "1", "0")
-xgb_default_to_kaggle <- data.frame(PassengerId=titanic_test_scaled$PassengerId,
+xgb_default_to_kaggle <- data.frame(PassengerId=titanic_test$PassengerId,
                                     Survived=survived_pred_xgb,
                                     stringsAsFactors = TRUE)
 write.csv(xgb_default_to_kaggle, file = "results/xgb_default.csv", row.names=FALSE, append = FALSE)
@@ -385,7 +385,7 @@ default_rf_mod
 ```{r "preparing random forest for submission to Kaggle", include=FALSE}
 survived_pred_rf <- predict(default_rf_mod, newdata = titanic_test_scaled)
 survived_pred_rf <- ifelse(survived_pred_rf == 1, "1", "0")
-rf_default_to_kaggle <- data.frame(PassengerId=titanic_test_scaled$PassengerId,
+rf_default_to_kaggle <- data.frame(PassengerId=titanic_test$PassengerId,
                                     Survived=survived_pred_rf,
                                     stringsAsFactors = TRUE)
 write.csv(rf_default_to_kaggle, file = "results/rf_default.csv", row.names=FALSE, append = FALSE)
@@ -420,7 +420,7 @@ The random forest grown with _leave one out cross validation_ for the splitting 
 ```{r "preparing random forest loocv for submission to Kaggle", include=FALSE}
 survived_pred_rfloocv <- predict(default_rf_mod, newdata = titanic_test_scaled)
 survived_pred_rfloocv <- ifelse(survived_pred_rfloocv == 1, "1", "0")
-rfloocv_default_to_kaggle <- data.frame(PassengerId=titanic_test_scaled$PassengerId,
+rfloocv_default_to_kaggle <- data.frame(PassengerId=titanic_test$PassengerId,
                                     Survived=survived_pred_rfloocv,
                                     stringsAsFactors = TRUE)
 write.csv(rfloocv_default_to_kaggle, file = "results/rf_loocv_default.csv", row.names=FALSE, append = FALSE)
@@ -455,7 +455,7 @@ The training accuracy was `r default_svm_linear$results$Accuracy` with the linea
 ```{r "preparing svm linear kernel for submission to Kaggle", include=FALSE}
 survived_pred_svmLin <- predict(default_svm_linear, newdata = titanic_test_scaled)
 survived_pred_svmLin <- ifelse(survived_pred_svmLin == 1, "1", "0")
-svmlinear_default_to_kaggle <- data.frame(PassengerId=titanic_test_scaled$PassengerId,
+svmlinear_default_to_kaggle <- data.frame(PassengerId=titanic_test$PassengerId,
                                     Survived=survived_pred_svmLin,
                                     stringsAsFactors = TRUE)
 write.csv(svmlinear_default_to_kaggle, file = "results/svmlinear_default.csv", row.names=FALSE, append = FALSE)
@@ -491,7 +491,7 @@ The training accuracy was `r default_svm_linear$results$Accuracy[-1]` with the l
 ```{r "preparing svm least square support Radial Basis Kernel for submission to Kaggle", include=FALSE}
 survived_pred_svmlsR <- predict(default_svm_lsRadial, newdata = titanic_test_scaled)
 survived_pred_svmlsR <- ifelse(survived_pred_svmlsR == 1, "1", "0")
-svm_lsradial_default_to_kaggle <- data.frame(PassengerId=titanic_test_scaled$PassengerId,
+svm_lsradial_default_to_kaggle <- data.frame(PassengerId=titanic_test$PassengerId,
                                     Survived=survived_pred_svmlsR,
                                     stringsAsFactors = TRUE)
 write.csv(svm_lsradial_default_to_kaggle, file = "results/svm_lsRadial_default.csv", row.names=FALSE, append = FALSE)
