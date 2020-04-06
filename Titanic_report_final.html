@@ -9,7 +9,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
 
 
-<meta name="author" content="P. Adames" />
+<meta name="author" content="P. Adames (284546)" />
 
 
 <title>Kaggle Titanic Data Analysis Report</title>
@@ -363,7 +363,7 @@ summary {
 
 
 <h1 class="title toc-ignore">Kaggle Titanic Data Analysis Report</h1>
-<h4 class="author">P. Adames</h4>
+<h4 class="author">P. Adames (284546)</h4>
 <h4 class="date">4/3/2020</h4>
 
 </div>
@@ -378,20 +378,18 @@ summary {
 <li><a href="#categorical-variables">Categorical variables</a></li>
 </ul></li>
 <li><a href="#preprocessing">Preprocessing</a><ul>
-<li><a href="#preparing-the-data-set-to-trin-the-models">Preparing the data set to trin the models</a></li>
+<li><a href="#preparing-the-data-set-to-train-the-models">Preparing the data set to train the models</a></li>
 <li><a href="#preparing-the-data-set-for-prediction">Preparing the data set for prediction</a></li>
 </ul></li>
-<li><a href="#buildinga-nd-scoring-the-models">Buildinga nd scoring the models</a><ul>
+<li><a href="#building-and-scoring-the-models">Building and scoring the models</a><ul>
 <li><a href="#logistic-model-trees">Logistic Model Trees</a></li>
 <li><a href="#bayesian-generalized-linear-model">Bayesian generalized linear model</a></li>
 <li><a href="#generalized-linear-model">Generalized linear model</a></li>
-<li><a href="#xgboost">xGBoost</a><ul>
-<li><a href="#obtaining-the-predictions">Obtaining the predictions</a></li>
-</ul></li>
-<li><a href="#random-forests">Random forests</a><ul>
-<li><a href="#obtaining-the-predictions-1">Obtaining the predictions</a></li>
-</ul></li>
-<li><a href="#support-vector-machine">Support Vector Machine</a></li>
+<li><a href="#xgboost">xGBoost</a></li>
+<li><a href="#random-forests">Random forests</a></li>
+<li><a href="#random-forest-with-cross-validation">Random forest with cross validation</a></li>
+<li><a href="#support-vector-machine-with-linear-kernel">Support Vector Machine with Linear kernel</a></li>
+<li><a href="#support-vector-machine-with-least-squares-radial-kernel.">Support Vector Machine with least squares Radial kernel.</a></li>
 <li><a href="#conclusions">Conclusions</a></li>
 </ul></li>
 <li><a href="#references">References</a></li>
@@ -448,8 +446,8 @@ summary {
 <h2>Preprocessing</h2>
 <p>Only the numerical variables identified in the previous section were normalized. The same normalization used on the training set was used to predict with the test set for consistency. The predictor does not need any normalization.</p>
 <p>To avoid missing predictions due to missing values in <code>Age</code> in the test set, I used K-nearest neighbours imputation as part of the preprocessing. This method with <em>k=10</em> finds the 10 nearest data vectors that look most like the data vector with the missing value and fills it in with the average from the cluster at that position. This gave slightly better results that not using this predictor at all to train the models. This restriction came from Kaggle requiring submissions for all records of the test set.</p>
-<div id="preparing-the-data-set-to-trin-the-models" class="section level3">
-<h3>Preparing the data set to trin the models</h3>
+<div id="preparing-the-data-set-to-train-the-models" class="section level3">
+<h3>Preparing the data set to train the models</h3>
 <p>The variables <code>Name</code> and <code>Cabin</code> were dropped from this data frame because they hold very little meaning for prediction. The other variables mentioned in the previous sections were included in the data frame.</p>
 </div>
 <div id="preparing-the-data-set-for-prediction" class="section level3">
@@ -457,28 +455,16 @@ summary {
 <p>The test set was transformed in the same fashion as the training set, in this case using the same procedure with centering around the mean and scaling using the standard deviation.</p>
 </div>
 </div>
-<div id="buildinga-nd-scoring-the-models" class="section level1">
-<h1>Buildinga nd scoring the models</h1>
+<div id="building-and-scoring-the-models" class="section level1">
+<h1>Building and scoring the models</h1>
 <p>The emphasis will be on models that tradionally score well in classification competitions, that are insensitive to outliers and that are ensemble methods for structured data. In general repeated cross validation with 10 groups and 3 repetitions was used as often as practical. Parallel processing was enabled also to speed up the fitting.</p>
+<p>Once each model is fitted to the training data a prediction is made with the test data and the result is saved to a <code>.csv</code> file in the folder for the results to be submitted to Kaggle. The score obtained from them is reported.</p>
 <div id="logistic-model-trees" class="section level2">
 <h2>Logistic Model Trees</h2>
-<pre class="r"><code>set.seed(112233)
-library(parallel) 
-no_cores &lt;- detectCores() - 1
-library(doParallel)
-cl &lt;- makePSOCKcluster(no_cores)
-registerDoParallel(cl)
-
-LMT_model &lt;- train(form = Survived ~ .,
-                   data = titanic_train_scaled,
-                   trControl= trainControl(method = &quot;repeatedcv&quot;, number=10, repeats = 3, allowParallel = TRUE),
-                   method = &quot;LMT&quot;)
-stopCluster(cl); registerDoSEQ()
-LMT_model</code></pre>
 <pre><code>## Logistic Model Trees 
 ## 
 ## 471 samples
-##   8 predictor
+##   7 predictor
 ##   2 classes: '0', '1' 
 ## 
 ## No pre-processing
@@ -487,41 +473,21 @@ LMT_model</code></pre>
 ## Resampling results across tuning parameters:
 ## 
 ##   iter  Accuracy   Kappa    
-##    1    0.7887431  0.5500104
-##   21    0.7872045  0.5475188
-##   41    0.7866000  0.5447399
+##    1    0.7915806  0.5541620
+##   21    0.7936344  0.5602351
+##   41    0.7908874  0.5545363
 ## 
 ## Accuracy was used to select the optimal model using the largest value.
-## The final value used for the model was iter = 1.</code></pre>
-<p>The accuracy on the training set was <code>0.7741</code> with Kappa of <code>0.5221</code>.</p>
-<pre class="r"><code>survived_pred_lmt&lt;- predict(LMT_model, newdata = titanic_test_scaled)
-survived_pred_lmt&lt;- ifelse(survived_pred_lmt
-                          == 1, &quot;0&quot;, &quot;1&quot;)
-lmt_to_kaggle &lt;- data.frame(PassengerId=titanic_test_scaled$PassengerId,
-                            Survived=survived_pred_lmt,
-                            stringsAsFactors = TRUE)
-write.csv(lmt_to_kaggle, file = &quot;results/lmt_default.csv&quot;, row.names=FALSE)</code></pre>
-<p>This result received a score of `` in Kaggle.</p>
+## The final value used for the model was iter = 21.</code></pre>
+<p>The accuracy on the training set was 0.7936344, 0.7908874 with Kappa of 0.5602351, 0.5545363.</p>
+<p>This result received a score of <code>0.23444</code> in Kaggle.</p>
 </div>
 <div id="bayesian-generalized-linear-model" class="section level2">
 <h2>Bayesian generalized linear model</h2>
-<pre class="r"><code>set.seed(112233)
-library(parallel) 
-no_cores &lt;- detectCores() - 1
-library(doParallel)
-cl &lt;- makePSOCKcluster(no_cores)
-registerDoParallel(cl)
-
-bayes_glm &lt;- train(form = Survived ~ .,
-                   data = titanic_train_scaled,
-                   trControl= trainControl(method = &quot;repeatedcv&quot;, number=10, repeats = 3, allowParallel = TRUE),
-                   method = &quot;bayesglm&quot;)
-stopCluster(cl); registerDoSEQ()
-bayes_glm</code></pre>
 <pre><code>## Bayesian Generalized Linear Model 
 ## 
 ## 471 samples
-##   8 predictor
+##   7 predictor
 ##   2 classes: '0', '1' 
 ## 
 ## No pre-processing
@@ -530,32 +496,16 @@ bayes_glm</code></pre>
 ## Resampling results:
 ## 
 ##   Accuracy   Kappa    
-##   0.7856807  0.5523862</code></pre>
+##   0.7792046  0.5395218</code></pre>
 <p>The accuracy on the training set was <code>0.7868</code> with a Kappa value of <code>0.5538</code>.</p>
-<pre class="r"><code>survived_pred_bayes_glm &lt;- predict(bayes_glm, newdata = titanic_test_scaled)
-survived_pred_bayes_glm &lt;- ifelse(survived_pred_bayes_glm == 1, &quot;0&quot;, &quot;1&quot;)
-bayes_glm_to_kaggle &lt;- data.frame(PassengerId=titanic_test_scaled$PassengerId,
-                                    Survived=survived_pred_bayes_glm,
-                                    stringsAsFactors = TRUE)
-write.csv(bayes_glm_to_kaggle, file = &quot;results/bayes_glm.csv&quot;, row.names=FALSE, append = FALSE)</code></pre>
-<pre><code>## Warning in write.csv(bayes_glm_to_kaggle, file = &quot;results/bayes_glm.csv&quot;, :
-## attempt to set 'append' ignored</code></pre>
 <p>This result received a score of <code>0.33971</code> in Kaggle.</p>
 </div>
 <div id="generalized-linear-model" class="section level2">
 <h2>Generalized linear model</h2>
-<pre class="r"><code>set.seed(112233)
-default_glm_mod = train(form = Survived ~ .,
-                        data = titanic_train_scaled,
-                        trControl= trainControl(method = &quot;repeatedcv&quot;, number=10, repeats = 3, allowParallel = TRUE),
-                        method = &quot;glm&quot;,
-                        family = &quot;binomial&quot;)
-
-default_glm_mod</code></pre>
 <pre><code>## Generalized Linear Model 
 ## 
 ## 471 samples
-##   8 predictor
+##   7 predictor
 ##   2 classes: '0', '1' 
 ## 
 ## No pre-processing
@@ -563,60 +513,24 @@ default_glm_mod</code></pre>
 ## Summary of sample sizes: 424, 423, 424, 425, 424, 424, ... 
 ## Resampling results:
 ## 
-##   Accuracy  Kappa    
-##   0.788533  0.5589737</code></pre>
-<pre class="r"><code>survived_pred_glm &lt;- predict(default_glm_mod, newdata = titanic_test_scaled)</code></pre>
-<pre><code>## Warning in predict.lm(object, newdata, se.fit, scale = 1, type = if (type == :
-## prediction from a rank-deficient fit may be misleading</code></pre>
-<pre class="r"><code>survived_pred_glm &lt;- ifelse(survived_pred_glm == 1, &quot;0&quot;, &quot;1&quot;)
-glm_default_to_kaggle &lt;- data.frame(PassengerId=titanic_test_scaled$PassengerId,
-                                    Survived=survived_pred_glm,
-                                    stringsAsFactors = TRUE)
-write.csv(glm_default_to_kaggle, file = &quot;results/glm_default.csv&quot;, row.names=FALSE, append = FALSE)</code></pre>
-<pre><code>## Warning in write.csv(glm_default_to_kaggle, file = &quot;results/glm_default.csv&quot;, :
-## attempt to set 'append' ignored</code></pre>
+##   Accuracy   Kappa    
+##   0.7806538  0.5425369</code></pre>
+<p>This model shows and accuracy of 0.7806538 on the training set.</p>
 <p>The logistic regression model got a score of <code>0.24401</code> on Kaggle.</p>
 </div>
 <div id="xgboost" class="section level2">
 <h2>xGBoost</h2>
-<p>Lets run a default XGBoost model.</p>
+<p>A default XGBoost model was built and some hyperparameter exploration was done only for the learning rate (the step size for the gradient estimation) and for the maximum depth of the trees. This took too long so several attempts at doing a grid optimization were abandoned. I think I need more experience with this method.</p>
 <pre><code>##   nrounds max_depth   eta gamma colsample_bytree min_child_weight subsample
 ## 1     100         4 0.025     0                1                1         1</code></pre>
-<div id="obtaining-the-predictions" class="section level3">
-<h3>Obtaining the predictions</h3>
-<p>Once the model is fitted to the training data the test data is used to make the prediction and the result is saved to a <code>.csv</code> file in the folder for results to be submitted to Kaggle.</p>
-<pre class="r"><code>survived_pred_xgb &lt;- predict(xgb_base, newdata = titanic_test_scaled)
-survived_pred_xgb &lt;- ifelse(survived_pred_xgb == 1, &quot;0&quot;, &quot;1&quot;)
-xgb_default_to_kaggle &lt;- data.frame(PassengerId=titanic_test_scaled$PassengerId,
-                                    Survived=survived_pred_xgb,
-                                    stringsAsFactors = TRUE)
-write.csv(xgb_default_to_kaggle, file = &quot;results/xgb_default.csv&quot;, row.names=FALSE, append = FALSE)</code></pre>
-<pre><code>## Warning in write.csv(xgb_default_to_kaggle, file = &quot;results/xgb_default.csv&quot;, :
-## attempt to set 'append' ignored</code></pre>
 <p>These results obtained a score of <code>0.21531</code> on Kaggle.</p>
-</div>
 </div>
 <div id="random-forests" class="section level2">
 <h2>Random forests</h2>
-<pre class="r"><code>set.seed(112233)
-library(parallel) 
-# Calculate the number of cores
-no_cores &lt;- detectCores() - 1
-
-library(doParallel)
-cl &lt;- makePSOCKcluster(no_cores)
-registerDoParallel(cl) 
-
-default_rf_mod &lt;- train(form = Survived ~ ., 
-                        data = titanic_train_scaled,
-                        method = &quot;rf&quot;,
-                        prox = TRUE)
-stopCluster(cl); registerDoSEQ()
-default_rf_mod</code></pre>
 <pre><code>## Random Forest 
 ## 
 ## 471 samples
-##   8 predictor
+##   7 predictor
 ##   2 classes: '0', '1' 
 ## 
 ## No pre-processing
@@ -625,45 +539,20 @@ default_rf_mod</code></pre>
 ## Resampling results across tuning parameters:
 ## 
 ##   mtry  Accuracy   Kappa    
-##    2    0.7903065  0.5540096
-##    7    0.7871034  0.5515029
-##   12    0.7769229  0.5300991
+##    2    0.7947542  0.5632482
+##    6    0.7874766  0.5544142
+##   11    0.7678393  0.5151572
 ## 
 ## Accuracy was used to select the optimal model using the largest value.
 ## The final value used for the model was mtry = 2.</code></pre>
-<div id="obtaining-the-predictions-1" class="section level3">
-<h3>Obtaining the predictions</h3>
-<p>Once the model is fitted to the training data the test data is used to make the prediction and the result is saved to a <code>.csv</code> file in the folder for results to be submitted to Kaggle.</p>
-<pre class="r"><code>survived_pred_rf &lt;- predict(default_rf_mod, newdata = titanic_test_scaled)
-survived_pred_rf &lt;- ifelse(survived_pred_rf == 1, &quot;0&quot;, &quot;1&quot;)
-rf_default_to_kaggle &lt;- data.frame(PassengerId=titanic_test_scaled$PassengerId,
-                                    Survived=survived_pred_rf,
-                                    stringsAsFactors = TRUE)
-write.csv(rf_default_to_kaggle, file = &quot;results/rf_default.csv&quot;, row.names=FALSE, append = FALSE)</code></pre>
-<pre><code>## Warning in write.csv(rf_default_to_kaggle, file = &quot;results/rf_default.csv&quot;, :
-## attempt to set 'append' ignored</code></pre>
 <p>The results form this model received a Kaggle score of <code>0.22966</code>.</p>
-<p>Random forest with cross validation</p>
-<pre class="r"><code>set.seed(112233)
-library(parallel) 
-# Calculate the number of cores
-no_cores &lt;- detectCores() - 1
-
-library(doParallel)
-cl &lt;- makePSOCKcluster(no_cores)
-registerDoParallel(cl) 
-
-default_rfcv_mod &lt;- train(form = Survived ~ ., 
-                        data = titanic_train_scaled,
-                        method = &quot;rf&quot;,
-                        trControl= trainControl(method = &quot;LOOCV&quot;, p = 0.1, allowParallel = TRUE),
-                        prox = TRUE)
-stopCluster(cl); registerDoSEQ()
-default_rfcv_mod</code></pre>
+</div>
+<div id="random-forest-with-cross-validation" class="section level2">
+<h2>Random forest with cross validation</h2>
 <pre><code>## Random Forest 
 ## 
 ## 471 samples
-##   8 predictor
+##   7 predictor
 ##   2 classes: '0', '1' 
 ## 
 ## No pre-processing
@@ -672,46 +561,20 @@ default_rfcv_mod</code></pre>
 ## Resampling results across tuning parameters:
 ## 
 ##   mtry  Accuracy   Kappa    
-##    2    0.7855626  0.5404168
-##    7    0.8025478  0.5826974
-##   12    0.8067941  0.5904074
+##    2    0.7983015  0.5683942
+##    6    0.8067941  0.5954181
+##   11    0.7940552  0.5707118
 ## 
 ## Accuracy was used to select the optimal model using the largest value.
-## The final value used for the model was mtry = 12.</code></pre>
-<p>The random forest grown with <em>leave one out cross validation</em> for the splitting on variables while growing trees, produces an accuracy of 0.8025478, 0.8067941 on the training set. However this translates into a Kaggle score of <code>0.22966</code>, identical to the one obtained for the regular random forest.</p>
-<pre class="r"><code>survived_pred_rfloocv &lt;- predict(default_rf_mod, newdata = titanic_test_scaled)
-survived_pred_rfloocv &lt;- ifelse(survived_pred_rfloocv == 1, &quot;0&quot;, &quot;1&quot;)
-rfloocv_default_to_kaggle &lt;- data.frame(PassengerId=titanic_test_scaled$PassengerId,
-                                    Survived=survived_pred_rfloocv,
-                                    stringsAsFactors = TRUE)
-write.csv(rfloocv_default_to_kaggle, file = &quot;results/rf_loocv_default.csv&quot;, row.names=FALSE, append = FALSE)</code></pre>
-<pre><code>## Warning in write.csv(rfloocv_default_to_kaggle, file = &quot;results/
-## rf_loocv_default.csv&quot;, : attempt to set 'append' ignored</code></pre>
+## The final value used for the model was mtry = 6.</code></pre>
+<p>The random forest grown with <em>leave one out cross validation</em> for the splitting on variables while growing trees, produces an accuracy of 0.8067941, 0.7940552 on the training set. However this translates into a Kaggle score of <code>0.22966</code>, identical to the one obtained for the regular random forest.</p>
 </div>
-</div>
-<div id="support-vector-machine" class="section level2">
-<h2>Support Vector Machine</h2>
-<p>The support vector machine with the Radial basis Function kernel has sigma and cost as the hyperparameters to tune.</p>
-<pre class="r"><code>set.seed(112233)
-library(parallel) 
-# Calculate the number of cores
-no_cores &lt;- detectCores() - 1
-
-library(doParallel)
-cl &lt;- makePSOCKcluster(no_cores)
-registerDoParallel(cl) 
-
-default_svm_linear &lt;- train(form = Survived ~ ., 
-                        data = titanic_train_scaled,
-                        method = &quot;svmLinear&quot;,
-                        trControl= trainControl(method = &quot;repeatedcv&quot;, number=10, repeats = 3, allowParallel = TRUE),
-                        tuneLength = 10)
-stopCluster(cl); registerDoSEQ()
-default_svm_linear</code></pre>
+<div id="support-vector-machine-with-linear-kernel" class="section level2">
+<h2>Support Vector Machine with Linear kernel</h2>
 <pre><code>## Support Vector Machines with Linear Kernel 
 ## 
 ## 471 samples
-##   8 predictor
+##   7 predictor
 ##   2 classes: '0', '1' 
 ## 
 ## No pre-processing
@@ -724,35 +587,15 @@ default_svm_linear</code></pre>
 ## 
 ## Tuning parameter 'C' was held constant at a value of 1</code></pre>
 <p>The training accuracy was 0.7856659 with the linear kernel.</p>
-<pre class="r"><code>survived_pred_svmLin &lt;- predict(default_svm_linear, newdata = titanic_test_scaled)
-survived_pred_svmLin &lt;- ifelse(survived_pred_svmLin == 1, &quot;0&quot;, &quot;1&quot;)
-svmlinear_default_to_kaggle &lt;- data.frame(PassengerId=titanic_test_scaled$PassengerId,
-                                    Survived=survived_pred_svmLin,
-                                    stringsAsFactors = TRUE)
-write.csv(svmlinear_default_to_kaggle, file = &quot;results/svmlinear_default.csv&quot;, row.names=FALSE, append = FALSE)</code></pre>
-<pre><code>## Warning in write.csv(svmlinear_default_to_kaggle, file = &quot;results/
-## svmlinear_default.csv&quot;, : attempt to set 'append' ignored</code></pre>
 <p>The results from this model produced a score of <code>0.23444</code> in Kaggle.</p>
-<pre class="r"><code>set.seed(112233)
-library(parallel) 
-# Calculate the number of cores
-no_cores &lt;- detectCores() - 1
-
-library(doParallel)
-cl &lt;- makePSOCKcluster(no_cores)
-registerDoParallel(cl) 
-
-default_svm_lsRadial &lt;- train(form = Survived ~ ., 
-                        data = titanic_train_scaled,
-                        method = &quot;lssvmRadial&quot;,
-                        trControl= trainControl(method = &quot;repeatedcv&quot;, number=10, repeats = 3, allowParallel = TRUE),
-                        tuneLength = 10)
-stopCluster(cl); registerDoSEQ()
-default_svm_lsRadial</code></pre>
+</div>
+<div id="support-vector-machine-with-least-squares-radial-kernel." class="section level2">
+<h2>Support Vector Machine with least squares Radial kernel.</h2>
+<p>This option has the Radial Basis Function kernel and sigma and cost as the hyperparameters to tune.</p>
 <pre><code>## Least Squares Support Vector Machine with Radial Basis Function Kernel 
 ## 
 ## 471 samples
-##   8 predictor
+##   7 predictor
 ##   2 classes: '0', '1' 
 ## 
 ## No pre-processing
@@ -761,86 +604,80 @@ default_svm_lsRadial</code></pre>
 ## Resampling results across tuning parameters:
 ## 
 ##   sigma       tau      Accuracy   Kappa    
-##   0.02546130   0.0625  0.7857700  0.5433099
-##   0.02546130   0.1250  0.7864342  0.5444324
-##   0.02546130   0.2500  0.7928198  0.5582053
-##   0.02546130   0.5000  0.7942691  0.5625330
-##   0.02546130   1.0000  0.7955963  0.5673397
-##   0.02546130   2.0000  0.7914148  0.5594161
-##   0.02546130   4.0000  0.7913262  0.5620204
-##   0.02546130   8.0000  0.7856801  0.5503818
-##   0.02546130  16.0000  0.7835524  0.5452143
-##   0.02546130  32.0000  0.7758685  0.5208271
-##   0.05040368   0.0625  0.7681847  0.5070227
-##   0.05040368   0.1250  0.7730606  0.5169511
-##   0.05040368   0.2500  0.7786611  0.5278481
-##   0.05040368   0.5000  0.7822387  0.5349254
-##   0.05040368   1.0000  0.7793562  0.5289183
-##   0.05040368   2.0000  0.7842912  0.5422051
-##   0.05040368   4.0000  0.7885940  0.5529882
-##   0.05040368   8.0000  0.7913705  0.5606572
-##   0.05040368  16.0000  0.7878540  0.5528661
-##   0.05040368  32.0000  0.7794461  0.5294776
-##   0.07534607   0.0625  0.7709496  0.5124035
-##   0.07534607   0.1250  0.7751902  0.5210296
-##   0.07534607   0.2500  0.7808055  0.5326934
-##   0.07534607   0.5000  0.7836276  0.5376899
-##   0.07534607   1.0000  0.7800513  0.5311087
-##   0.07534607   2.0000  0.7807309  0.5336273
-##   0.07534607   4.0000  0.7857706  0.5452772
-##   0.07534607   8.0000  0.7865396  0.5477454
-##   0.07534607  16.0000  0.7872045  0.5494747
-##   0.07534607  32.0000  0.7737871  0.5131628
-##   0.10028845   0.0625  0.7701633  0.5123139
-##   0.10028845   0.1250  0.7736953  0.5191087
-##   0.10028845   0.2500  0.7736959  0.5190992
-##   0.10028845   0.5000  0.7744514  0.5197417
-##   0.10028845   1.0000  0.7787234  0.5293517
-##   0.10028845   2.0000  0.7801117  0.5333628
-##   0.10028845   4.0000  0.7786322  0.5300567
-##   0.10028845   8.0000  0.7829639  0.5401558
-##   0.10028845  16.0000  0.7786919  0.5293983
-##   0.10028845  32.0000  0.7701652  0.5010628
-##   0.12523083   0.0625  0.7695305  0.5084512
-##   0.12523083   0.1250  0.7674472  0.5042751
-##   0.12523083   0.2500  0.7695755  0.5092610
-##   0.12523083   0.5000  0.7702847  0.5108778
-##   0.12523083   1.0000  0.7753103  0.5216775
-##   0.12523083   2.0000  0.7787819  0.5280621
-##   0.12523083   4.0000  0.7773782  0.5241311
-##   0.12523083   8.0000  0.7702854  0.5083782
-##   0.12523083  16.0000  0.7738906  0.5119877
-##   0.12523083  32.0000  0.7688656  0.4918887
-##   0.15017321   0.0625  0.7623760  0.4906819
-##   0.15017321   0.1250  0.7623606  0.4906626
-##   0.15017321   0.2500  0.7645191  0.4958934
-##   0.15017321   0.5000  0.7680813  0.5043937
-##   0.15017321   1.0000  0.7730619  0.5143034
-##   0.15017321   2.0000  0.7710100  0.5100106
-##   0.15017321   4.0000  0.7675236  0.5022157
-##   0.15017321   8.0000  0.7667849  0.5002068
-##   0.15017321  16.0000  0.7640656  0.4875845
-##   0.15017321  32.0000  0.7596869  0.4644827
+##   0.02753238   0.0625  0.7886666  0.5490830
+##   0.02753238   0.1250  0.7908251  0.5534571
+##   0.02753238   0.2500  0.7957312  0.5645457
+##   0.02753238   0.5000  0.7915202  0.5552840
+##   0.02753238   1.0000  0.7878829  0.5503867
+##   0.02753238   2.0000  0.7906157  0.5576887
+##   0.02753238   4.0000  0.7877634  0.5541943
+##   0.02753238   8.0000  0.7821185  0.5428260
+##   0.02753238  16.0000  0.7807296  0.5400996
+##   0.02753238  32.0000  0.7766080  0.5270259
+##   0.06449886   0.0625  0.7746300  0.5203956
+##   0.06449886   0.1250  0.7781626  0.5277082
+##   0.06449886   0.2500  0.7809249  0.5330102
+##   0.06449886   0.5000  0.7886679  0.5493836
+##   0.06449886   1.0000  0.7914605  0.5551903
+##   0.06449886   2.0000  0.7864805  0.5461461
+##   0.06449886   4.0000  0.7858008  0.5466698
+##   0.06449886   8.0000  0.7815140  0.5385126
+##   0.06449886  16.0000  0.7793864  0.5347368
+##   0.06449886  32.0000  0.7787208  0.5309282
+##   0.10146534   0.0625  0.7717160  0.5142384
+##   0.10146534   0.1250  0.7745240  0.5194808
+##   0.10146534   0.2500  0.7773923  0.5247273
+##   0.10146534   0.5000  0.7822830  0.5341428
+##   0.10146534   1.0000  0.7864940  0.5444819
+##   0.10146534   2.0000  0.7865390  0.5449308
+##   0.10146534   4.0000  0.7808485  0.5332713
+##   0.10146534   8.0000  0.7829762  0.5389079
+##   0.10146534  16.0000  0.7815134  0.5358672
+##   0.10146534  32.0000  0.7800500  0.5286314
+##   0.13843182   0.0625  0.7751298  0.5187235
+##   0.13843182   0.1250  0.7765784  0.5221322
+##   0.13843182   0.2500  0.7801855  0.5293980
+##   0.13843182   0.5000  0.7780874  0.5251737
+##   0.13843182   1.0000  0.7816194  0.5334823
+##   0.13843182   2.0000  0.7786611  0.5274136
+##   0.13843182   4.0000  0.7793851  0.5295185
+##   0.13843182   8.0000  0.7751895  0.5209230
+##   0.13843182  16.0000  0.7723680  0.5140313
+##   0.13843182  32.0000  0.7723848  0.5081482
+##   0.17539830   0.0625  0.7730914  0.5115025
+##   0.17539830   0.1250  0.7738154  0.5130280
+##   0.17539830   0.2500  0.7737698  0.5131163
+##   0.17539830   0.5000  0.7765932  0.5186769
+##   0.17539830   1.0000  0.7816040  0.5303882
+##   0.17539830   2.0000  0.7807894  0.5295946
+##   0.17539830   4.0000  0.7758531  0.5195052
+##   0.17539830   8.0000  0.7723507  0.5118506
+##   0.17539830  16.0000  0.7695447  0.5038658
+##   0.17539830  32.0000  0.7752332  0.5070608
+##   0.21236478   0.0625  0.7823582  0.5312804
+##   0.21236478   0.1250  0.7823434  0.5315500
+##   0.21236478   0.2500  0.7815879  0.5295238
+##   0.21236478   0.5000  0.7809089  0.5275733
+##   0.21236478   1.0000  0.7787363  0.5236315
+##   0.21236478   2.0000  0.7787825  0.5244225
+##   0.21236478   4.0000  0.7745561  0.5161841
+##   0.21236478   8.0000  0.7738321  0.5144514
+##   0.21236478  16.0000  0.7780270  0.5203548
+##   0.21236478  32.0000  0.7675673  0.4859566
 ## 
 ## Accuracy was used to select the optimal model using the largest value.
-## The final values used for the model were sigma = 0.0254613 and tau = 1.</code></pre>
+## The final values used for the model were sigma = 0.02753238 and tau = 0.25.</code></pre>
 <p>The training accuracy was with the linear kernel.</p>
-<pre class="r"><code>survived_pred_svmlsR &lt;- predict(default_svm_lsRadial, newdata = titanic_test_scaled)
-survived_pred_svmlsR &lt;- ifelse(survived_pred_svmlsR == 1, &quot;0&quot;, &quot;1&quot;)
-svm_lsradial_default_to_kaggle &lt;- data.frame(PassengerId=titanic_test_scaled$PassengerId,
-                                    Survived=survived_pred_svmlsR,
-                                    stringsAsFactors = TRUE)
-write.csv(svm_lsradial_default_to_kaggle, file = &quot;results/svm_lsRadial_default.csv&quot;, row.names=FALSE, append = FALSE)</code></pre>
-<pre><code>## Warning in write.csv(svm_lsradial_default_to_kaggle, file = &quot;results/
-## svm_lsRadial_default.csv&quot;, : attempt to set 'append' ignored</code></pre>
 <p>These predictions got <code>0.23923</code> in Kaggle.</p>
 </div>
 <div id="conclusions" class="section level2">
 <h2>Conclusions</h2>
 <p>The Kaggle titanic training set is quite challenging if one really wishes to score high on the leaderboard.</p>
 <p>My perception is that it requires more thought into understanding the way the predictors, both categorical and continuous affect the prediction. Most of the implementations used automatically treat the categorical predictors like the tree based methods or convert them into numerica variables using hot-encoding or binary encoding as factors.</p>
-<p>I did not have the opportunity of doing more systematic hyperparameter tuning, especially due to the long run times. The small data set and the small number of predictors discouraged my the use of neural networks.</p>
-<p>The best entry in Kaggle scored <code>0.24401</code> for the generalized linear model using the</p>
+<p>Some of the variables are not very balanced and this can cause problems.</p>
+<p>I did not have the opportunity of doing more systematic hyperparameter tuning, especially due to the long run times.</p>
+<p>The small data set and the small number of predictors discouraged my the use of neural networks.</p>
+<p>The best entry in Kaggle scored <code>0.33971</code> for the Bayes generalized linear model. This is a Bayesian logistic regression with a reputation for being more stable numerically and computationally than the simple logistic regression. The coefficients are given a prior Student-t distributions to build a Naive Bayes estimator, using an Expectation-Maximization algorithm and a weighted least squares error reduction step.</p>
 </div>
 </div>
 <div id="references" class="section level1 unnumbered">
