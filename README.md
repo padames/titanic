@@ -6,3 +6,4 @@ To use the Kaggle API for command line visit the [docs](https://www.kaggle.com/d
 
 You can generate a fresh API token and copy it as a file called kaggle.json to ~/.kaggle/ on linux
 
+The exploration, pre-processing,  and model building steps are explained in the R markdown file `Titanic_report_final.Rmd`
